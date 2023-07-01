@@ -1,0 +1,49 @@
+# Compiled Object files, Static and Dynamic libs (Shared Objects)
+*.o
+*.a
+*.so
+
+# Executables
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go specific
+*.bin
+*.exe
+*.test
+*.prof
+*.out
+
+# Testing
+*.test
+
+# Dependency directories (remove the comment below if you are using Go Modules)
+# vendor/
+
+# Go build output
+build/
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+
+# Gin specific
+.env
+
+# IDE-specific files
+.vscode/
+.idea/
+
+# Miscellaneous
+.DS_Store
+Thumbs.db
+
+# Config file
+config.yaml
