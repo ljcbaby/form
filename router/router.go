@@ -1,8 +1,8 @@
 package router
 
 import (
-	"github.com/ljcbaby/select/controller"
-	"github.com/ljcbaby/select/middleware"
+	"github.com/ljcbaby/form/controller"
+	"github.com/ljcbaby/form/middleware"
 
 	"github.com/gin-gonic/gin"
 )

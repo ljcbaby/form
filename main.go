@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/ljcbaby/select/config"
-	"github.com/ljcbaby/select/database"
-	"github.com/ljcbaby/select/router"
+	"github.com/ljcbaby/form/config"
+	"github.com/ljcbaby/form/database"
+	"github.com/ljcbaby/form/router"
 )
 
 func main() {
