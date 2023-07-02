@@ -87,7 +87,49 @@ func (c *FormController) DuplicateForm(ctx *gin.Context) {
 }
 
 func (c *FormController) GetFormList(ctx *gin.Context) {
-	
+	userID, _ := ctx.Get("userId")
+
+	page, err := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+	size, err := strconv.Atoi(ctx.DefaultQuery("size", "10"))
+	if err != nil || size < 1 {
+		size = 10
+	}
+	if size > 100 {
+		size = 100
+	}
+
+	fs := service.FormService{}
+
+	total, err := fs.GetFormListCount(userID.(int64))
+	if err != nil {
+		returnMySQLError(ctx, err)
+		return
+	}
+
+	var forms []model.FormBase
+	err = fs.GetFormList(userID.(int64), page, size, &forms)
+	if err != nil {
+		returnMySQLError(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"code": "0",
+		"msg":  "Success.",
+		"data": gin.H{
+			"totalPage": total/size + func() int {
+				if total%size > 0 {
+					return 1
+				}
+				return 0
+			}(),
+			"totalCount": total,
+			"results":    forms,
+		},
+	})
 }
 
 func (c *FormController) GetFormDetail(ctx *gin.Context) {
@@ -95,11 +137,7 @@ func (c *FormController) GetFormDetail(ctx *gin.Context) {
 
 	id, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
 	if err != nil {
-		ctx.JSON(http.StatusOK, gin.H{
-			"code": "1",
-			"msg":  "Invalid form id.",
-			"data": err.Error(),
-		})
+		c.returnFormNotFound(ctx)
 		return
 	}
 
@@ -109,7 +147,7 @@ func (c *FormController) GetFormDetail(ctx *gin.Context) {
 
 	fs := service.FormService{}
 
-	exist, err := fs.CheckFormNameExist(form)
+	exist, err := fs.CheckFormExist(form)
 	if err != nil {
 		returnMySQLError(ctx, err)
 		return

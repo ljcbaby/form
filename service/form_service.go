@@ -37,7 +37,29 @@ func (s *FormService) CreateForm(uid int64) (id int64, err error) {
 	return form.ID, nil
 }
 
-func (s *FormService) GetFormList() {}
+func (s *FormService) GetFormListCount(uid int64) (count int, err error) {
+	db := database.DB
+
+	var t int64
+	if err := db.Model(&model.Form{}).Where("owner_id = ?", uid).Where("status != ?", 3).
+		Count(&t).Error; err != nil {
+		return 0, err
+	}
+
+	count = int(t)
+	return count, nil
+}
+
+func (s *FormService) GetFormList(uid int64, page int, size int, forms *[]model.FormBase) error {
+	db := database.DB
+
+	if err := db.Where("owner_id = ?", uid).Offset((page - 1) * size).
+		Limit(size).Find(forms).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func (s *FormService) GetFormDetail(form *model.Form) error {
 	db := database.DB
