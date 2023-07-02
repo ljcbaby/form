@@ -34,7 +34,7 @@ func SetupRouter() *gin.Engine {
 	r.GET("/forms/:id", middleware.Auth(), Controller.Form.GetFormDetail)
 	r.PATCH("/forms/:id", middleware.Auth(), Controller.Form.UpdateForm)
 	r.DELETE("/forms/:id", middleware.Auth(), Controller.Form.DeleteForm)
-	r.POST("/forms/:id/submit", middleware.Auth(), Controller.Form.SubmitForm)
+	r.POST("/forms/:id/submit", Controller.Form.SubmitForm)
 	r.GET("/forms/:id/results", middleware.Auth(), Controller.Form.GetFormResults)
 
 	return r

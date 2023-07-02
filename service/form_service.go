@@ -1,21 +1,19 @@
 package service
 
 import (
-	"errors"
-
 	"github.com/ljcbaby/form/database"
 	"github.com/ljcbaby/form/model"
 )
 
 type FormService struct{}
 
-func (s *FormService) CheckFormNameExist(id int64) (bool, error) {
+func (s *FormService) CheckFormNameExist(form model.Form) (bool, error) {
 	db := database.DB
 
-	var form model.Form
-	if err := db.Where("id = ?", id).Where("status != ?", 3).First(&form).Error; err != nil {
+	if err := db.Where("id = ?", form.ID).Where("owner_id = ?", form.OwnerID).
+		Where("status != ?", 3).First(&form).Error; err != nil {
 		if err.Error() == "record not found" {
-			return false, errors.New("FORM_NOT_FOUND")
+			return false, nil
 		}
 		return false, err
 	}

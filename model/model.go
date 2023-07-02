@@ -22,11 +22,18 @@ type Form struct {
 	Status      int             `gorm:"column:status" json:"-"` // 1: 未发布 2: 已发布 3: 已删除
 	IsPublish   string          `gorm:"-" json:"isPublish"`
 	AnswerCount string          `gorm:"-" json:"answerCount"`
-	ModifiedAt  time.Time       `gorm:"column:modifiedAt" json:"modifiedAt"`
+	ModifiedAt  TimeStamp       `gorm:"column:modifiedAt" json:"modifiedAt"`
 	Components  json.RawMessage `gorm:"column:components" json:"components"`
 }
 
 func (form *Form) BeforeSave(tx *gorm.DB) (err error) {
-	form.ModifiedAt = time.Now()
+	form.ModifiedAt = TimeStamp(time.Now())
 	return nil
+}
+
+type TimeStamp time.Time
+
+func (t TimeStamp) MarshalJSON() ([]byte, error) {
+	stamp := time.Time(t).Unix()
+	return json.Marshal(stamp)
 }
