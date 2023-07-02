@@ -116,7 +116,29 @@ func (s *FormService) SubmitForm(id int64, result model.Result) error {
 	return nil
 }
 
-func (s *FormService) GetFormResults() {}
+func (s *FormService) GetFormResultsCount(fid int64) (count int, err error) {
+	db := database.DB
+
+	var t int64
+	if err := db.Model(&model.Result{}).Where("form_id = ?", fid).
+		Count(&t).Error; err != nil {
+		return 0, err
+	}
+
+	count = int(t)
+	return count, nil
+}
+
+func (s *FormService) GetFormResults(fid int64, page int, size int, results *[]model.Result) error {
+	db := database.DB
+
+	if err := db.Where("form_id = ?", fid).Offset((page - 1) * size).
+		Limit(size).Find(results).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func (s *FormService) DuplicateForm(form model.Form) (id int64, err error) {
 	db := database.DB
