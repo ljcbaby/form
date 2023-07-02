@@ -27,5 +27,15 @@ func SetupRouter() *gin.Engine {
 	r.POST("/users/register", Controller.User.Register)
 	r.GET("/users", middleware.Auth(), Controller.User.GetUserInfo)
 
+	// Form
+	r.POST("/forms", middleware.Auth(), Controller.Form.CreateForm)
+	r.POST("/forms/:id/duplicate", middleware.Auth(), Controller.Form.DuplicateForm)
+	r.GET("/forms", middleware.Auth(), Controller.Form.GetFormList)
+	r.GET("/forms/:id", middleware.Auth(), Controller.Form.GetFormDetail)
+	r.PATCH("/forms/:id", middleware.Auth(), Controller.Form.UpdateForm)
+	r.DELETE("/forms/:id", middleware.Auth(), Controller.Form.DeleteForm)
+	r.POST("/forms/:id/submit", middleware.Auth(), Controller.Form.SubmitForm)
+	r.GET("/forms/:id/results", middleware.Auth(), Controller.Form.GetFormResults)
+
 	return r
 }

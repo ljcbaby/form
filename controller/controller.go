@@ -8,7 +8,7 @@ import (
 
 type Controller struct {
 	User *UserController
-	// Form *FormController
+	Form *FormController
 }
 
 func (c *Controller) Index(ctx *gin.Context) {
