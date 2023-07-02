@@ -173,7 +173,85 @@ func (c *FormController) GetFormDetail(ctx *gin.Context) {
 	})
 }
 
-func (c *FormController) UpdateForm(ctx *gin.Context) {}
+func (c *FormController) UpdateForm(ctx *gin.Context) {
+	userID, _ := ctx.Get("userId")
+
+	id, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
+	if err != nil {
+		c.returnFormNotFound(ctx)
+		return
+	}
+
+	var form model.Form
+	form.ID = id
+	form.OwnerID = userID.(int64)
+
+	fs := service.FormService{}
+
+	exist, err := fs.CheckFormExist(form)
+	if err != nil {
+		returnMySQLError(ctx, err)
+		return
+	}
+	if !exist {
+		c.returnFormNotFound(ctx)
+		return
+	}
+
+	if err := fs.GetFormDetail(&form); err != nil {
+		returnMySQLError(ctx, err)
+		return
+	}
+
+	if form.Status == 2 {
+		ctx.JSON(http.StatusOK, gin.H{
+			"code": "1",
+			"msg":  "Form is published.",
+		})
+		return
+	}
+
+	form.IsPublish = -1
+
+	if err := ctx.BindJSON(&form); err != nil {
+		ctx.JSON(http.StatusOK, gin.H{
+			"code": "1",
+			"msg":  "Invalid form data.",
+			"data": err.Error(),
+		})
+		return
+	}
+
+	if len(form.Title) > 255 {
+		ctx.JSON(http.StatusOK, gin.H{
+			"code": "1",
+			"msg":  "Form title too long.",
+		})
+		return
+	}
+	if form.IsPublish == 0 || form.IsPublish == 1 {
+		form.Status = int(form.IsPublish) + 1
+	} else {
+		if form.IsPublish != -1 {
+			ctx.JSON(http.StatusOK, gin.H{
+				"code": "1",
+				"msg":  "Invalid form status.",
+			})
+			return
+		}
+	}
+
+	if err := fs.UpdateForm(&form); err != nil {
+		returnMySQLError(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"code": "0",
+		"msg":  "Success.",
+		"data": form,
+	})
+}
 
 func (c *FormController) DeleteForm(ctx *gin.Context) {}
 

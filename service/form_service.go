@@ -68,11 +68,22 @@ func (s *FormService) GetFormDetail(form *model.Form) error {
 		return err
 	}
 
+	form.IsPublish = int64(form.Status) - 1
+
 	return nil
 }
 
-func (s *FormService) UpdateForm(form model.Form) {
+func (s *FormService) UpdateForm(form *model.Form) error {
+	db := database.DB
 
+	r := db.Model(&form).Updates(form)
+	if r.Error != nil {
+		return r.Error
+	}
+
+	form.IsPublish = int64(form.Status) - 1
+
+	return nil
 }
 
 func (s *FormService) DeleteForm(id int64) error {
