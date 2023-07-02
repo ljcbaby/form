@@ -367,6 +367,13 @@ func (c *FormController) GetFormResults(ctx *gin.Context) {
 
 	total, err := fs.GetFormResultsCount(id)
 	if err != nil {
+		if err.Error() == "FORM_STATUS_INVALID" {
+			ctx.JSON(http.StatusOK, gin.H{
+				"code": "1",
+				"msg":  "Form is not published.",
+			})
+			return
+		}
 		returnMySQLError(ctx, err)
 		return
 	}

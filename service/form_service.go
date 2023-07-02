@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"time"
 
 	"github.com/ljcbaby/form/database"
@@ -120,6 +121,16 @@ func (s *FormService) SubmitForm(id int64, result model.Result) error {
 
 func (s *FormService) GetFormResultsCount(fid int64) (count int, err error) {
 	db := database.DB
+
+	var status int
+	if err := db.Model(&model.Form{}).Where("id = ?", fid).
+		Pluck("status", &status).Error; err != nil {
+		return 0, err
+	}
+
+	if status != 2 {
+		return 0, errors.New("FORM_STATUS_INVALID")
+	}
 
 	var t int64
 	if err := db.Model(&model.Result{}).Where("form_id = ?", fid).
