@@ -11,6 +11,13 @@ import (
 
 type FormController struct{}
 
+func (c *FormController) returnFormNotFound(ctx *gin.Context) {
+	ctx.JSON(http.StatusOK, gin.H{
+		"code": "10",
+		"msg":  "Form not found.",
+	})
+}
+
 func (c *FormController) CreateForm(ctx *gin.Context) {
 	userId, _ := ctx.Get("userId")
 
@@ -35,9 +42,53 @@ func (c *FormController) CreateForm(ctx *gin.Context) {
 	})
 }
 
-func (c *FormController) DuplicateForm(ctx *gin.Context) {}
+func (c *FormController) DuplicateForm(ctx *gin.Context) {
+	userID, _ := ctx.Get("userId")
 
-func (c *FormController) GetFormList(ctx *gin.Context) {}
+	id, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusOK, gin.H{
+			"code": "1",
+			"msg":  "Invalid form id.",
+			"data": err.Error(),
+		})
+		return
+	}
+
+	var form model.Form
+	form.ID = id
+	form.OwnerID = userID.(int64)
+
+	fs := service.FormService{}
+
+	exist, err := fs.CheckFormExist(form)
+	if err != nil {
+		returnMySQLError(ctx, err)
+		return
+	}
+	if !exist {
+		c.returnFormNotFound(ctx)
+		return
+	}
+
+	newID, err := fs.DuplicateForm(form)
+	if err != nil {
+		returnMySQLError(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"code": "0",
+		"msg":  "Success.",
+		"data": gin.H{
+			"id": newID,
+		},
+	})
+}
+
+func (c *FormController) GetFormList(ctx *gin.Context) {
+	
+}
 
 func (c *FormController) GetFormDetail(ctx *gin.Context) {
 	userID, _ := ctx.Get("userId")

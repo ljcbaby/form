@@ -7,7 +7,7 @@ import (
 
 type FormService struct{}
 
-func (s *FormService) CheckFormNameExist(form model.Form) (bool, error) {
+func (s *FormService) CheckFormExist(form model.Form) (bool, error) {
 	db := database.DB
 
 	if err := db.Where("id = ?", form.ID).Where("owner_id = ?", form.OwnerID).
@@ -68,4 +68,16 @@ func (s *FormService) SubmitForm() {}
 
 func (s *FormService) GetFormResults() {}
 
-func (s *FormService) DuplicateForm() {}
+func (s *FormService) DuplicateForm(form model.Form) (id int64, err error) {
+	db := database.DB
+
+	s.GetFormDetail(&form)
+	form.ID = 0
+	form.Status = 1
+	form.Title = form.Title + " - 副本"
+	if err := db.Create(&form).Error; err != nil {
+		return 0, err
+	}
+
+	return form.ID, nil
+}
