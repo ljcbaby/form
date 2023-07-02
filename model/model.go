@@ -40,3 +40,9 @@ func (form *Form) BeforeSave(tx *gorm.DB) (err error) {
 	form.ModifiedAt = time.Now()
 	return nil
 }
+
+type Result struct {
+	ID     string          `gorm:"primaryKey;autoIncrement" json:"id"`
+	FormID int64           `gorm:"column:form_id" json:"-"`
+	Res    json.RawMessage `gorm:"column:result;not null" json:"res" binding:"required"`
+}

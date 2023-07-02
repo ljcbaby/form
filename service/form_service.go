@@ -12,8 +12,13 @@ type FormService struct{}
 func (s *FormService) CheckFormExist(form model.Form) (bool, error) {
 	db := database.DB
 
-	if err := db.Where("id = ?", form.ID).Where("owner_id = ?", form.OwnerID).
-		Where("status != ?", 3).First(&form).Error; err != nil {
+	query := db.Where("id = ?", form.ID).Where("status != ?", 3)
+
+	if form.OwnerID != 0 {
+		query = query.Where("owner_id = ?", form.OwnerID)
+	}
+
+	if err := query.First(&form).Error; err != nil {
 		if err.Error() == "record not found" {
 			return false, nil
 		}
@@ -100,7 +105,16 @@ func (s *FormService) DeleteForm(id int64) error {
 	return nil
 }
 
-func (s *FormService) SubmitForm() {}
+func (s *FormService) SubmitForm(id int64, result model.Result) error {
+	db := database.DB
+
+	result.FormID = id
+	if err := db.Create(&result).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func (s *FormService) GetFormResults() {}
 

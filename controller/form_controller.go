@@ -289,6 +289,46 @@ func (c *FormController) DeleteForm(ctx *gin.Context) {
 	})
 }
 
-func (c *FormController) SubmitForm(ctx *gin.Context) {}
+func (c *FormController) SubmitForm(ctx *gin.Context) {
+	id, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
+	if err != nil {
+		c.returnFormNotFound(ctx)
+		return
+	}
+
+	fs := service.FormService{}
+
+	exist, err := fs.CheckFormExist(model.Form{ID: id})
+	if err != nil {
+		returnMySQLError(ctx, err)
+		return
+	}
+	if !exist {
+		c.returnFormNotFound(ctx)
+		return
+	}
+
+	var result model.Result
+
+	if err := ctx.BindJSON(&result); err != nil {
+		ctx.JSON(http.StatusOK, gin.H{
+			"code": "1",
+			"msg":  "Invalid form data.",
+			"data": err.Error(),
+		})
+		return
+	}
+
+	err = fs.SubmitForm(id, result)
+	if err != nil {
+		returnMySQLError(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"code": "0",
+		"msg":  "Success.",
+	})
+}
 
 func (c *FormController) GetFormResults(ctx *gin.Context) {}
