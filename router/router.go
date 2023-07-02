@@ -22,5 +22,10 @@ func SetupRouter() *gin.Engine {
 	// 路由配置
 	r.GET("/", Controller.Index)
 
+	// User
+	r.POST("/users/login", Controller.User.Login)
+	r.POST("/users/register", Controller.User.Register)
+	r.GET("/users", middleware.Auth(), Controller.User.GetUserInfo)
+
 	return r
 }

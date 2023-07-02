@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	db *gorm.DB
+	DB *gorm.DB
 )
 
 func ConnectMySQL() error {
@@ -24,9 +24,7 @@ func ConnectMySQL() error {
 	)
 
 	var err error
-	db, err = gorm.Open(mysql.New(mysql.Config{
-		DSN: dsn,
-	}), &gorm.Config{})
+	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return err
 	}
