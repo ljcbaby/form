@@ -25,17 +25,17 @@ func SetupRouter() *gin.Engine {
 	// User
 	r.POST("/users/login", Controller.User.Login)
 	r.POST("/users/register", Controller.User.Register)
-	r.GET("/users", middleware.Auth(), Controller.User.GetUserInfo)
+	r.GET("/users", middleware.Auth(true), Controller.User.GetUserInfo)
 
 	// Form
-	r.POST("/forms", middleware.Auth(), Controller.Form.CreateForm)
-	r.POST("/forms/:id/duplicate", middleware.Auth(), Controller.Form.DuplicateForm)
-	r.GET("/forms", middleware.Auth(), Controller.Form.GetFormList)
-	r.GET("/forms/:id", middleware.Auth(), Controller.Form.GetFormDetail)
-	r.PATCH("/forms/:id", middleware.Auth(), Controller.Form.UpdateForm)
-	r.DELETE("/forms/:id", middleware.Auth(), Controller.Form.DeleteForm)
+	r.POST("/forms", middleware.Auth(true), Controller.Form.CreateForm)
+	r.POST("/forms/:id/duplicate", middleware.Auth(true), Controller.Form.DuplicateForm)
+	r.GET("/forms", middleware.Auth(true), Controller.Form.GetFormList)
+	r.GET("/forms/:id", middleware.Auth(false), Controller.Form.GetFormDetail)
+	r.PATCH("/forms/:id", middleware.Auth(true), Controller.Form.UpdateForm)
+	r.DELETE("/forms/:id", middleware.Auth(true), Controller.Form.DeleteForm)
 	r.POST("/forms/:id/submit", Controller.Form.SubmitForm)
-	r.GET("/forms/:id/results", middleware.Auth(), Controller.Form.GetFormResults)
+	r.GET("/forms/:id/results", middleware.Auth(true), Controller.Form.GetFormResults)
 
 	return r
 }

@@ -136,7 +136,7 @@ func (c *FormController) GetFormList(ctx *gin.Context) {
 }
 
 func (c *FormController) GetFormDetail(ctx *gin.Context) {
-	userID, _ := ctx.Get("userId")
+	userID, t := ctx.Get("userId")
 
 	id, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
 	if err != nil {
@@ -146,7 +146,9 @@ func (c *FormController) GetFormDetail(ctx *gin.Context) {
 
 	var form model.Form
 	form.ID = id
-	form.OwnerID = userID.(int64)
+	if t {
+		form.OwnerID = userID.(int64)
+	}
 
 	fs := service.FormService{}
 

@@ -12,10 +12,12 @@ type FormService struct{}
 func (s *FormService) CheckFormExist(form model.Form) (bool, error) {
 	db := database.DB
 
-	query := db.Where("id = ?", form.ID).Where("status != ?", 3)
+	query := db.Where("id = ?", form.ID)
 
 	if form.OwnerID != 0 {
-		query = query.Where("owner_id = ?", form.OwnerID)
+		query = query.Where("owner_id = ?", form.OwnerID).Where("status != ?", 3)
+	} else {
+		query = query.Where("status = ?", 2)
 	}
 
 	if err := query.First(&form).Error; err != nil {
