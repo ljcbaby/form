@@ -253,7 +253,41 @@ func (c *FormController) UpdateForm(ctx *gin.Context) {
 	})
 }
 
-func (c *FormController) DeleteForm(ctx *gin.Context) {}
+func (c *FormController) DeleteForm(ctx *gin.Context) {
+	userID, _ := ctx.Get("userId")
+
+	id, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
+	if err != nil {
+		c.returnFormNotFound(ctx)
+		return
+	}
+
+	var form model.Form
+	form.ID = id
+	form.OwnerID = userID.(int64)
+
+	fs := service.FormService{}
+
+	exist, err := fs.CheckFormExist(form)
+	if err != nil {
+		returnMySQLError(ctx, err)
+		return
+	}
+	if !exist {
+		c.returnFormNotFound(ctx)
+		return
+	}
+
+	if err := fs.DeleteForm(form.ID); err != nil {
+		returnMySQLError(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"code": "0",
+		"msg":  "Success.",
+	})
+}
 
 func (c *FormController) SubmitForm(ctx *gin.Context) {}
 

@@ -1,6 +1,8 @@
 package service
 
 import (
+	"time"
+
 	"github.com/ljcbaby/form/database"
 	"github.com/ljcbaby/form/model"
 )
@@ -89,7 +91,8 @@ func (s *FormService) UpdateForm(form *model.Form) error {
 func (s *FormService) DeleteForm(id int64) error {
 	db := database.DB
 
-	result := db.Model(&model.Form{}).Where("id = ?", id).Update("status", 3)
+	result := db.Model(&model.Form{}).Where("id = ?", id).
+		Update("status", 3).Update("modified_at", time.Now())
 	if result.Error != nil {
 		return result.Error
 	}
