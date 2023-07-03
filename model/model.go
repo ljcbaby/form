@@ -19,9 +19,8 @@ type FormBase struct {
 	OwnerID     int64     `gorm:"column:owner_id" json:"-"`
 	ID          int64     `gorm:"primaryKey;autoIncrement" json:"id"`
 	Title       string    `gorm:"column:title" json:"title"`
-	Status      int       `gorm:"column:status" json:"-"` // 1: 未发布 2: 已发布 3: 已删除
-	IsPublish   int64     `gorm:"-" json:"isPublish"`
-	AnswerCount int64     `gorm:"-" json:"answerCount"`
+	IsPublish   int64     `gorm:"column:isPublish" json:"isPublish"`
+	AnswerCount int64     `gorm:"column:answerCount" json:"answerCount"`
 	ModifiedAt  time.Time `gorm:"column:modifiedAt" json:"modifiedAt"`
 }
 
@@ -42,7 +41,8 @@ func (form *Form) BeforeSave(tx *gorm.DB) (err error) {
 }
 
 type Result struct {
-	ID     string          `gorm:"primaryKey;autoIncrement" json:"id"`
-	FormID int64           `gorm:"column:form_id" json:"-"`
-	Res    json.RawMessage `gorm:"column:result;not null" json:"res" binding:"required"`
+	ID       int64           `gorm:"primaryKey;autoIncrement" json:"id"`
+	FormID   int64           `gorm:"column:form_id" json:"-"`
+	Identify string          `gorm:"column:identify" json:"identify"`
+	Res      json.RawMessage `gorm:"column:result;not null" json:"res" binding:"required"`
 }
