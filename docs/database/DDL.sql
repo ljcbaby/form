@@ -99,7 +99,8 @@ BEGIN
 
   -- 使用临时表进行进一步操作
   SELECT
-     (SELECT CAST(jt.value AS CHAR CHARACTER SET utf8mb4) FROM JSON_TABLE(components, '$[*]' COLUMNS (fe_id VARCHAR(255) PATH '$.fe_id', value VARCHAR(65535) PATH '$.type')) AS jt WHERE jt.fe_id COLLATE utf8mb4_general_ci = feId COLLATE utf8mb4_general_ci) AS value
+     (SELECT CAST(jt.value AS CHAR CHARACTER SET utf8mb4) FROM JSON_TABLE(components, '$[*]' COLUMNS (fe_id VARCHAR(255) PATH '$.fe_id', value VARCHAR(65535) PATH '$.type')) AS jt WHERE jt.fe_id COLLATE utf8mb4_general_ci = feId COLLATE utf8mb4_general_ci) AS value,
+     (SELECT CAST(jt.props AS CHAR CHARACTER SET utf8mb4) FROM JSON_TABLE(components, '$[*]' COLUMNS (fe_id VARCHAR(255) PATH '$.fe_id', props JSON PATH '$.props')) AS jt WHERE jt.fe_id COLLATE utf8mb4_general_ci = feId COLLATE utf8mb4_general_ci) AS props
   FROM
     temp_table;
 

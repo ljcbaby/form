@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/ljcbaby/form/database"
 	"github.com/ljcbaby/form/model"
@@ -73,23 +74,60 @@ func (s *ResultService) GetFormResultsList(fid int64, fe_id string, page int, si
 		return err
 	}
 
-	var f string
+	var f struct {
+		T string `gorm:"column:value"`
+		P string `gorm:"column:props"`
+	}
 	if err := db.Raw("CALL GetComponentType(? ,?)", fid, fe_id).Scan(&f).Error; err != nil {
 		return err
 	}
 
-	switch f {
+	switch f.T {
 	case "questionInput", "questionTextarea":
 		for i := range *results {
 			(*results)[i].ToView = (*results)[i].Res
 		}
 	case "questionRadio":
+		var t struct {
+			Options []struct {
+				K string `json:"value"`
+				V string `json:"text"`
+			} `json:"options"`
+		}
+		err := json.Unmarshal([]byte(f.P), &t)
+		if err != nil {
+			return err
+		}
 		for i := range *results {
-			(*results)[i].ToView = (*results)[i].Res
+			for j := range t.Options {
+				if (*results)[i].Res == t.Options[j].K {
+					(*results)[i].ToView = t.Options[j].V
+					break
+				}
+			}
 		}
 	case "questionCheckbox":
+		var t struct {
+			Options []struct {
+				K string `json:"value"`
+				V string `json:"text"`
+			} `json:"list"`
+		}
+		err := json.Unmarshal([]byte(f.P), &t)
+		if err != nil {
+			return err
+		}
 		for i := range *results {
-			(*results)[i].ToView = (*results)[i].Res
+			s := strings.Split((*results)[i].Res, ",")
+			for k := range t.Options {
+				for j := range s {
+					if s[j] == t.Options[k].K {
+						(*results)[i].ToView += t.Options[k].V + ", "
+						break
+					}
+				}
+			}
+			(*results)[i].ToView = (*results)[i].ToView[:len((*results)[i].ToView)-2]
 		}
 	}
 
