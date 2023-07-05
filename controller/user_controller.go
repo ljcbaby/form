@@ -17,7 +17,6 @@ func (c *UserController) Login(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{
 			"code": "1",
 			"msg":  "Login failed.",
-			"data": err.Error(),
 		})
 		return
 	}
@@ -37,7 +36,6 @@ func (c *UserController) Login(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{
 			"code": "1",
 			"msg":  "Login failed.",
-			"data": err.Error(),
 		})
 		return
 	}

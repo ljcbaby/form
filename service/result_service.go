@@ -1,7 +1,7 @@
 package service
 
 import (
-	"errors"
+	"encoding/json"
 
 	"github.com/ljcbaby/form/database"
 	"github.com/ljcbaby/form/model"
@@ -9,7 +9,21 @@ import (
 
 type ResultService struct{}
 
-func (s *ResultService) SubmitForm(id int64, result model.Result) error {
+func (s *ResultService) CheckFormResultExist(form model.Form) (bool, error) {
+	db := database.DB
+
+	if err := db.Where("id = ?", form.ID).Where("owner_id = ?", form.OwnerID).
+		Where("status = ?", 2).First(&form).Error; err != nil {
+		if err.Error() == "record not found" {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (s *ResultService) SubmitForm(id int64, result model.ResultRequest) error {
 	db := database.DB
 
 	result.FormID = id
@@ -20,21 +34,30 @@ func (s *ResultService) SubmitForm(id int64, result model.Result) error {
 	return nil
 }
 
+func (s *ResultService) GetFormResult(fid int64, result *model.ResultResponse) error {
+	db := database.DB
+
+	err := db.Raw("CALL GetComponents(?)", fid).Scan(&result.Components).Error
+	if err != nil {
+		return err
+	}
+
+	var fb model.FormBase
+	if err := db.Where("id = ?", fid).First(&fb).Error; err != nil {
+		return err
+	}
+
+	result.Title = fb.Title
+	result.AnswerCount = fb.AnswerCount
+
+	return nil
+}
+
 func (s *ResultService) GetFormResultsCount(fid int64) (count int, err error) {
 	db := database.DB
 
-	var status int
-	if err := db.Model(&model.Form{}).Where("id = ?", fid).
-		Pluck("status", &status).Error; err != nil {
-		return 0, err
-	}
-
-	if status != 2 {
-		return 0, errors.New("FORM_STATUS_INVALID")
-	}
-
 	var t int64
-	if err := db.Model(&model.Result{}).Where("form_id = ?", fid).
+	if err := db.Model(&model.ResultRequest{}).Where("form_id = ?", fid).
 		Count(&t).Error; err != nil {
 		return 0, err
 	}
@@ -43,12 +66,67 @@ func (s *ResultService) GetFormResultsCount(fid int64) (count int, err error) {
 	return count, nil
 }
 
-func (s *ResultService) GetFormResultsList(fid int64, page int, size int, results *[]model.Result) error {
+func (s *ResultService) GetFormResultsList(fid int64, fe_id string, page int, size int, results *[]model.ResultList) error {
 	db := database.DB
 
-	if err := db.Where("form_id = ?", fid).Offset((page - 1) * size).
-		Limit(size).Find(results).Error; err != nil {
+	if err := db.Raw("CALL GetResults(?, ?, ?, ?)", fid, fe_id, size, size*(page-1)).Find(results).Error; err != nil {
 		return err
+	}
+
+	var f string
+	if err := db.Raw("CALL GetComponentType(? ,?)", fid, fe_id).Scan(&f).Error; err != nil {
+		return err
+	}
+
+	switch f {
+	case "questionInput", "questionTextarea":
+		for i := range *results {
+			(*results)[i].ToView = (*results)[i].Res
+		}
+	case "questionRadio":
+		for i := range *results {
+			(*results)[i].ToView = (*results)[i].Res
+		}
+	case "questionCheckbox":
+		for i := range *results {
+			(*results)[i].ToView = (*results)[i].Res
+		}
+	}
+
+	return nil
+}
+
+func (s *ResultService) GetFormResultsDetail(fid int64, rid int64, res *[]model.Component) error {
+	db := database.DB
+
+	var str string
+	err := db.Table("forms").Select("components").Where("id = ?", fid).Find(&str).Error
+	if err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal([]byte(str), res); err != nil {
+		return err
+	}
+
+	err = db.Table("results").Select("result").Where("id = ?", rid).Find(&str).Error
+	if err != nil {
+		return err
+	}
+
+	var ans []model.Component
+	if err := json.Unmarshal([]byte(str), &ans); err != nil {
+		return err
+	}
+
+	// attach value to res[x] from ans[x] where res[x].fe_id == ans[x].fe_id
+	for i := range *res {
+		for j := range ans {
+			if (*res)[i].FeID == ans[j].FeID {
+				(*res)[i].Value = ans[j].Value
+				break
+			}
+		}
 	}
 
 	return nil

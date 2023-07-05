@@ -30,7 +30,7 @@ func (c *ResultController) SubmitForm(ctx *gin.Context) {
 		return
 	}
 
-	var result model.Result
+	var result model.ResultRequest
 
 	if err := ctx.BindJSON(&result); err != nil {
 		ctx.JSON(http.StatusOK, gin.H{
@@ -55,6 +55,42 @@ func (c *ResultController) SubmitForm(ctx *gin.Context) {
 	})
 }
 
+func (c *ResultController) GetFormResult(ctx *gin.Context) {
+	userID, _ := ctx.Get("userId")
+
+	id, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
+	if err != nil {
+		returnFormIdInvalid(ctx)
+		return
+	}
+
+	rs := service.ResultService{}
+
+	exist, err := rs.CheckFormResultExist(model.Form{ID: id, OwnerID: userID.(int64)})
+	if err != nil {
+		returnMySQLError(ctx, err)
+		return
+	}
+	if !exist {
+		returnFormResultInvalid(ctx)
+		return
+	}
+
+	var res model.ResultResponse
+
+	err = rs.GetFormResult(id, &res)
+	if err != nil {
+		returnMySQLError(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"code": "0",
+		"msg":  "Success.",
+		"data": res,
+	})
+}
+
 func (c *ResultController) GetFormResultsList(ctx *gin.Context) {
 	userID, _ := ctx.Get("userId")
 
@@ -64,6 +100,14 @@ func (c *ResultController) GetFormResultsList(ctx *gin.Context) {
 		return
 	}
 
+	fe_id := ctx.DefaultQuery("fe_id", "")
+	if fe_id == "" {
+		ctx.JSON(http.StatusOK, gin.H{
+			"code": "1",
+			"msg":  "Invalid Query.",
+		})
+		return
+	}
 	page, err := strconv.Atoi(ctx.DefaultQuery("page", "1"))
 	if err != nil || page < 1 {
 		page = 1
@@ -76,36 +120,27 @@ func (c *ResultController) GetFormResultsList(ctx *gin.Context) {
 		size = 50
 	}
 
-	fs := service.FormService{}
+	rs := service.ResultService{}
 
-	exist, err := fs.CheckFormExist(model.Form{ID: id, OwnerID: userID.(int64)})
+	exist, err := rs.CheckFormResultExist(model.Form{ID: id, OwnerID: userID.(int64)})
 	if err != nil {
 		returnMySQLError(ctx, err)
 		return
 	}
 	if !exist {
-		returnFormNotFound(ctx)
+		returnFormResultInvalid(ctx)
 		return
 	}
 
-	rs := service.ResultService{}
-
 	total, err := rs.GetFormResultsCount(id)
 	if err != nil {
-		if err.Error() == "FORM_STATUS_INVALID" {
-			ctx.JSON(http.StatusOK, gin.H{
-				"code": "1",
-				"msg":  "Form is not published.",
-			})
-			return
-		}
 		returnMySQLError(ctx, err)
 		return
 	}
 
-	var results []model.Result
+	var results []model.ResultList
 
-	err = rs.GetFormResultsList(id, page, size, &results)
+	err = rs.GetFormResultsList(id, fe_id, page, size, &results)
 	if err != nil {
 		returnMySQLError(ctx, err)
 		return
@@ -123,6 +158,51 @@ func (c *ResultController) GetFormResultsList(ctx *gin.Context) {
 			}(),
 			"totalCount": total,
 			"results":    results,
+		},
+	})
+}
+
+func (c *ResultController) GetFormResultsDetail(ctx *gin.Context) {
+	userID, _ := ctx.Get("userId")
+
+	id, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
+	if err != nil {
+		returnFormIdInvalid(ctx)
+		return
+	}
+	rid, err := strconv.ParseInt(ctx.Param("rid"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusOK, gin.H{
+			"code": "1",
+			"msg":  "Invalid result id.",
+		})
+		return
+	}
+
+	rs := service.ResultService{}
+
+	exist, err := rs.CheckFormResultExist(model.Form{ID: id, OwnerID: userID.(int64)})
+	if err != nil {
+		returnMySQLError(ctx, err)
+		return
+	}
+	if !exist {
+		returnFormResultInvalid(ctx)
+		return
+	}
+
+	var res []model.Component
+	err = rs.GetFormResultsDetail(id, rid, &res)
+	if err != nil {
+		returnMySQLError(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"code": "0",
+		"msg":  "Success.",
+		"data": gin.H{
+			"components": res,
 		},
 	})
 }

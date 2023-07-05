@@ -33,6 +33,13 @@ func returnFormIdInvalid(ctx *gin.Context) {
 	})
 }
 
+func returnFormResultInvalid(ctx *gin.Context) {
+	ctx.JSON(http.StatusOK, gin.H{
+		"code": "12",
+		"msg":  "Invalid form result.",
+	})
+}
+
 func returnMySQLError(ctx *gin.Context, err error) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"code": "100",

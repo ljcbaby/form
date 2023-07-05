@@ -40,9 +40,32 @@ func (form *Form) BeforeSave(tx *gorm.DB) (err error) {
 	return nil
 }
 
-type Result struct {
-	ID       int64           `gorm:"primaryKey;autoIncrement" json:"id"`
-	FormID   int64           `gorm:"column:form_id" json:"-"`
-	Identify string          `gorm:"column:identify" json:"identify"`
-	Res      json.RawMessage `gorm:"column:result;not null" json:"res" binding:"required"`
+type ResultRequest struct {
+	ID     int64           `gorm:"primaryKey;autoIncrement" json:"id"`
+	FormID int64           `gorm:"column:form_id" json:"-"`
+	Res    json.RawMessage `gorm:"column:result;not null" json:"answerList" binding:"required"`
+}
+
+func (ResultRequest) TableName() string {
+	return "results"
+}
+
+type ResultResponse struct {
+	Title       string      `gorm:"column:title" json:"title"`
+	AnswerCount int64       `gorm:"column:answerCount" json:"answerCount"`
+	Components  []Component `json:"components"`
+}
+
+type Component struct {
+	FeID  string          `gorm:"column:fe_id" json:"fe_id,omitempty"`
+	Title string          `gorm:"column:title" json:"title,omitempty"`
+	Type  string          `gorm:"column:type" json:"type,omitempty"`
+	Props json.RawMessage `gorm:"column:props" json:"props,omitempty"`
+	Value json.RawMessage `gorm:"column:value" json:"value,omitempty"`
+}
+
+type ResultList struct {
+	ID     int64  `gorm:"primaryKey;autoIncrement" json:"id"`
+	ToView string `gorm:"-" json:"toView"`
+	Res    string `gorm:"column:value" json:"-"`
 }
