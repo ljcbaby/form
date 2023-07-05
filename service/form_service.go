@@ -99,7 +99,7 @@ func (s *FormService) DeleteForm(id int64) error {
 	db := database.DB
 
 	result := db.Model(&model.Form{}).Where("id = ?", id).
-		Update("status", 3).Update("modified_at", time.Now())
+		Update("status", 3).Update("modifiedAt", time.Now())
 	if result.Error != nil {
 		return result.Error
 	}
