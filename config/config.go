@@ -17,6 +17,10 @@ type Config struct {
 		Password string `yaml:"Password"`
 		Database string `yaml:"Database"`
 	} `yaml:"MySQL"`
+
+	OpenAI struct {
+		ApiKey string `yaml:"ApiKey"`
+	} `yaml:"OpenAI"`
 }
 
 var Conf *Config

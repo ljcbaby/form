@@ -8,3 +8,6 @@ MySQL:
   Username: root
   Password: root
   Database: test
+
+OpenAI:
+  ApiKey: sk-1234567890

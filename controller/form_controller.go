@@ -275,3 +275,75 @@ func (c *FormController) DeleteForm(ctx *gin.Context) {
 		"msg":  "Success.",
 	})
 }
+
+func (c *FormController) GenerateFormBody(ctx *gin.Context) {
+	userID, _ := ctx.Get("userId")
+
+	id, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
+	if err != nil {
+		returnFormIdInvalid(ctx)
+		return
+	}
+
+	var req struct {
+		Question string `json:"question" binding:"required"`
+	}
+	if err := ctx.BindJSON(&req); err != nil {
+		ctx.JSON(http.StatusOK, gin.H{
+			"code": "1",
+			"msg":  "Invalid data.",
+			"data": err.Error(),
+		})
+		return
+	}
+
+	var form model.Form
+	form.ID = id
+	form.OwnerID = userID.(int64)
+
+	fs := service.FormService{}
+
+	exist, err := fs.CheckFormExist(form)
+	if err != nil {
+		returnMySQLError(ctx, err)
+		return
+	}
+	if !exist {
+		returnFormNotFound(ctx)
+		return
+	}
+
+	if err := fs.GetFormDetail(&form); err != nil {
+		returnMySQLError(ctx, err)
+		return
+	}
+
+	if form.Status == 2 {
+		ctx.JSON(http.StatusOK, gin.H{
+			"code": "2",
+			"msg":  "Form is published.",
+		})
+		return
+	}
+
+	form.Components, err = fs.OpenAIGenerate(req.Question)
+	if err != nil {
+		ctx.JSON(http.StatusOK, gin.H{
+			"code": "3",
+			"msg":  "Generate form body failed.",
+			"data": err.Error(),
+		})
+		return
+	}
+
+	err = fs.UpdateForm(&form)
+	if err != nil {
+		returnMySQLError(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"code": "0",
+		"msg":  "Success.",
+	})
+}

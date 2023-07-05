@@ -29,6 +29,7 @@ func SetupRouter() *gin.Engine {
 
 	// Form
 	r.POST("/forms", middleware.Auth(true), Controller.Form.CreateForm)
+	r.POST("/forms/:id/generateFormBody", middleware.Auth(true), Controller.Form.GenerateFormBody)
 	r.POST("/forms/:id/duplicate", middleware.Auth(true), Controller.Form.DuplicateForm)
 	r.GET("/forms", middleware.Auth(true), Controller.Form.GetFormList)
 	r.GET("/forms/:id", middleware.Auth(false), Controller.Form.GetFormDetail)
