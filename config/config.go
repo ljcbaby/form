@@ -19,7 +19,9 @@ type Config struct {
 	} `yaml:"MySQL"`
 
 	OpenAI struct {
-		ApiKey string `yaml:"ApiKey"`
+		BaseURL string `yaml:"BaseURL"`
+		Model   string `yaml:"Model"`
+		ApiKey  string `yaml:"ApiKey"`
 	} `yaml:"OpenAI"`
 }
 

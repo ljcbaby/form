@@ -3,8 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"io"
+	"strings"
 	"time"
 
 	"github.com/ljcbaby/form/config"
@@ -129,47 +128,44 @@ func (s *FormService) DuplicateForm(form model.Form) (id int64, err error) {
 
 func (s *FormService) OpenAIGenerate(question string) (Components json.RawMessage, err error) {
 	conf := config.Conf.OpenAI
-	c := openai.NewClient(conf.ApiKey)
-	ctx_openai := context.Background()
 
-	req := openai.ChatCompletionRequest{
-		Model:     openai.GPT3Dot5Turbo,
-		MaxTokens: 3000,
-		Messages: []openai.ChatCompletionMessage{
-			{
-				Role: openai.ChatMessageRoleUser,
-				Content: `[\n` +
-					`{"type": "questionInfo", "fe_id": "c1", "props": { "desc": "问卷描述", "title": "问卷标题"}, "title": "问卷信息"},\n` +
-					`{"type": "questionTitle", "fe_id": "c2", "props": {"text": "一行标题", "level": 1, "isCenter": false}, "title": "标题"},\n` +
-					`{"type": "questionParagraph", "fe_id": "c3", "props": {"text": "一行段落", "isCenter": false}, "title": "段落"},\n` +
-					`{"type": "questionInput", "fe_id": "c3", "props": {"title": "输入框标题", "placeholder": "请输入..."}, "title": "输入框"},\n` +
-					`{"type": "questionTextarea", "fe_id": "c4", "props": {"title": "输入框标题", "placeholder": "请输入..."}, "title": "多行输入"},\n` +
-					`{"type": "questionRadio", "fe_id": "c5", "props": {"title": "单选标题", "value": "", "options": [{"text": "选项1", "value": "item1"}, {"text": "选项2", "value": "item2"}, {"text": "选项3", "value": "item3"}], "isVertical": false}, "title": "单选"},\n` +
-					`{"type": "questionCheckbox", "fe_id": "c7", "props": {"list": [{"text": "选项1", "value": "item1", "checked": false}, {"text": "选项2", "value": "item2", "checked": false},{"text": "选项3", "value": "item3", "checked": false}], "title": "多选标题", "isVertical": false}, "title": "多选"}]\n` +
-					`以上为一个问卷中的所有组件格式,其中 fe_id 的值不可重复且不与type有关联性,type 的七种类型不可更改 \n` +
-					`按照如上格式给出收集 ` + question + ` 的问卷，只给出问卷内容，不需要给出任何解释`,
+	llmConf := openai.DefaultConfig(conf.ApiKey)
+	llmConf.BaseURL = conf.BaseURL
+	c := openai.NewClientWithConfig(llmConf)
+
+	resp, err := c.CreateChatCompletion(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model: conf.Model,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role: openai.ChatMessageRoleUser,
+					Content: `[\n` +
+						`{"type": "questionInfo", "fe_id": "c1", "props": { "desc": "问卷描述", "title": "问卷标题"}, "title": "问卷信息"},\n` +
+						`{"type": "questionTitle", "fe_id": "c2", "props": {"text": "一行标题", "level": 1, "isCenter": false}, "title": "标题"},\n` +
+						`{"type": "questionParagraph", "fe_id": "c3", "props": {"text": "一行段落", "isCenter": false}, "title": "段落"},\n` +
+						`{"type": "questionInput", "fe_id": "c3", "props": {"title": "输入框标题", "placeholder": "请输入..."}, "title": "输入框"},\n` +
+						`{"type": "questionTextarea", "fe_id": "c4", "props": {"title": "输入框标题", "placeholder": "请输入..."}, "title": "多行输入"},\n` +
+						`{"type": "questionRadio", "fe_id": "c5", "props": {"title": "单选标题", "value": "", "options": [{"text": "选项1", "value": "item1"}, {"text": "选项2", "value": "item2"}, {"text": "选项3", "value": "item3"}], "isVertical": false}, "title": "单选"},\n` +
+						`{"type": "questionCheckbox", "fe_id": "c7", "props": {"list": [{"text": "选项1", "value": "item1", "checked": false}, {"text": "选项2", "value": "item2", "checked": false},{"text": "选项3", "value": "item3", "checked": false}], "title": "多选标题", "isVertical": false}, "title": "多选"}]\n` +
+						`以上为一个问卷中的所有组件格式,其中 fe_id 的值不可重复且不与type有关联性,type 的七种类型不可更改 \n` +
+						`按照如上格式给出收集 ` + question + ` 的问卷，只给出问卷内容，不需要给出任何解释`,
+				},
 			},
 		},
-		Stream: false,
-	}
-	stream, err := c.CreateChatCompletionStream(ctx_openai, req)
+	)
+
 	if err != nil {
 		return nil, err
 	}
-	defer stream.Close()
-	var str1 string
-	str1 = ""
-	for {
-		response, err := stream.Recv()
-		if errors.Is(err, io.EOF) {
-			break
-		}
 
-		if err != nil {
-			return nil, err
-		}
-		str1 += response.Choices[0].Delta.Content
+	res := resp.Choices[0].Message.Content
+
+	if strings.HasPrefix(res, "```json") {
+		res = strings.TrimPrefix(res, "```json")
+		res = strings.TrimSuffix(res, "```")
 	}
 
-	return []byte(str1), nil
+	content := json.RawMessage(res)
+	return content, nil
 }
