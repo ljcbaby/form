@@ -61,7 +61,7 @@ type Component struct {
 	Title string          `gorm:"column:title" json:"title,omitempty"`
 	Type  string          `gorm:"column:type" json:"type,omitempty"`
 	Props json.RawMessage `gorm:"column:props" json:"props,omitempty"`
-	Value json.RawMessage `gorm:"column:value" json:"value,omitempty"`
+	Value string          `gorm:"column:value" json:"value,omitempty"`
 }
 
 type ResultList struct {

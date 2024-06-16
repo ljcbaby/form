@@ -206,3 +206,34 @@ func (c *ResultController) GetFormResultsDetail(ctx *gin.Context) {
 		},
 	})
 }
+
+func (c *ResultController) GetFormResultsFile(ctx *gin.Context) {
+	userID, _ := ctx.Get("userId")
+
+	id, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
+	if err != nil {
+		returnFormIdInvalid(ctx)
+		return
+	}
+
+	rs := service.ResultService{}
+
+	exist, err := rs.CheckFormResultExist(model.Form{ID: id, OwnerID: userID.(int64)})
+	if err != nil {
+		returnMySQLError(ctx, err)
+		return
+	}
+	if !exist {
+		returnFormResultInvalid(ctx)
+		return
+	}
+
+	file, err := rs.GetFormResultsFile(id)
+	if err != nil {
+		returnMySQLError(ctx, err)
+		return
+	}
+
+	ctx.Header("Content-Transfer-Encoding", "binary")
+	ctx.Data(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", file.Bytes())
+}

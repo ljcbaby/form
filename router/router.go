@@ -41,6 +41,7 @@ func SetupRouter() *gin.Engine {
 	r.GET("/forms/:id/result", middleware.Auth(true), Controller.Result.GetFormResult)
 	r.GET("/forms/:id/results", middleware.Auth(true), Controller.Result.GetFormResultsList)
 	r.GET("/forms/:id/results/:rid", middleware.Auth(true), Controller.Result.GetFormResultsDetail)
+	r.GET("/forms/:id/results/export", middleware.Auth(true), Controller.Result.GetFormResultsFile)
 
 	return r
 }

@@ -1,11 +1,13 @@
 package service
 
 import (
+	"bytes"
 	"encoding/json"
 	"strings"
 
 	"github.com/ljcbaby/form/database"
 	"github.com/ljcbaby/form/model"
+	"github.com/tealeg/xlsx"
 )
 
 type ResultService struct{}
@@ -168,4 +170,152 @@ func (s *ResultService) GetFormResultsDetail(fid int64, rid int64, res *[]model.
 	}
 
 	return nil
+}
+
+func (s *ResultService) GetFormResultsFile(fid int64) (bytes.Buffer, error) {
+	db := database.DB
+
+	var str string
+	err := db.Table("forms").Select("components").Where("id = ?", fid).Find(&str).Error
+	if err != nil {
+		return bytes.Buffer{}, err
+	}
+
+	var components []model.Component
+	if err := json.Unmarshal([]byte(str), &components); err != nil {
+		return bytes.Buffer{}, err
+	}
+
+	var results []string
+	err = db.Table("results").Select("result").Where("form_id = ?", fid).Find(&results).Error
+	if err != nil {
+		return bytes.Buffer{}, err
+	}
+
+	file := xlsx.NewFile()
+	sheet, err := file.AddSheet("Sheet")
+	if err != nil {
+		return bytes.Buffer{}, err
+	}
+
+	row := sheet.AddRow()
+
+	var result []model.Component
+	if err := json.Unmarshal([]byte(results[0]), &result); err != nil {
+		return bytes.Buffer{}, err
+	}
+
+	for _, c := range result {
+		title, err := getComponentTitle(components, c.FeID)
+		if err != nil {
+			return bytes.Buffer{}, err
+		}
+		cell := row.AddCell()
+		cell.Value = title
+	}
+
+	for _, r := range results {
+		row := sheet.AddRow()
+
+		var result []model.Component
+		if err := json.Unmarshal([]byte(r), &result); err != nil {
+			return bytes.Buffer{}, err
+		}
+
+		for _, c := range result {
+			value, err := getSelectValue(getComponentType(components, c.FeID), getComponentProps(components, c.FeID), c.Value)
+			if err != nil {
+				return bytes.Buffer{}, err
+			}
+			cell := row.AddCell()
+			cell.Value = value
+		}
+	}
+
+	var buf bytes.Buffer
+	if err := file.Write(&buf); err != nil {
+		return bytes.Buffer{}, err
+	}
+
+	return buf, nil
+}
+
+func getComponentTitle(Cs []model.Component, fe_id string) (string, error) {
+	for _, c := range Cs {
+		if c.FeID == fe_id {
+			var p struct {
+				Title string `json:"title"`
+			}
+			if err := json.Unmarshal(c.Props, &p); err != nil {
+				return "", err
+			}
+			return p.Title, nil
+		}
+	}
+	return "", nil
+}
+
+func getComponentProps(Cs []model.Component, fe_id string) json.RawMessage {
+	for _, c := range Cs {
+		if c.FeID == fe_id {
+			return c.Props
+		}
+	}
+	return nil
+}
+
+func getComponentType(Cs []model.Component, fe_id string) string {
+	for _, c := range Cs {
+		if c.FeID == fe_id {
+			return c.Type
+		}
+	}
+	return ""
+}
+
+func getSelectValue(t string, p json.RawMessage, v string) (string, error) {
+	if t == "questionRadio" {
+		var t struct {
+			Options []struct {
+				K string `json:"value"`
+				V string `json:"text"`
+			} `json:"options"`
+		}
+		if err := json.Unmarshal(p, &t); err != nil {
+			return "", err
+		}
+		for _, o := range t.Options {
+			if o.K == v {
+				return o.V, nil
+			}
+		}
+	}
+
+	if t == "questionCheckbox" {
+		if v == "" {
+			return "", nil
+		}
+		ks := strings.Split(v, ",")
+		var t struct {
+			Options []struct {
+				K string `json:"value"`
+				V string `json:"text"`
+			} `json:"list"`
+		}
+		if err := json.Unmarshal(p, &t); err != nil {
+			return "", err
+		}
+		var res string
+		for _, k := range ks {
+			for _, o := range t.Options {
+				if o.K == k {
+					res += o.V + ", "
+					break
+				}
+			}
+		}
+		return res[:len(res)-2], nil
+	}
+
+	return v, nil
 }
